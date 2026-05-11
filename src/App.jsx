@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import * as THREE from 'three'
 import plantCellRender from './assets/cell-plant-render.png'
+import { t, getCellTypeName, getCellTypeLabel, getOrganelleText, getCellProfileText, getMicroscopeText, getCurriculumTags } from './i18n.js'
 import './App.css'
 
 const CELL_TYPES = [
@@ -2303,7 +2304,7 @@ function CellThumb({ cell, selected }) {
   )
 }
 
-function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSelectedOrganelle, customCells }) {
+function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSelectedOrganelle, customCells, lang }) {
   const cells = getPrimaryCells(customCells)
   const availableOrganelles = getAvailableOrganelleIds(selectedCell)
 
@@ -2313,26 +2314,30 @@ function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSele
         <header className="panel-title">
           <span>
             <SparklesIcon size={14} />
-            Cell Types
+            {t('sidebar.cellTypes', lang)}
           </span>
           <ChevronDown size={14} />
         </header>
         <div className="cell-list">
-          {cells.map((cell) => (
-            <button
-              key={cell.id}
-              type="button"
-              className={selectedCell === cell.id ? 'cell-row active' : 'cell-row'}
-              onClick={() => setSelectedCell(cell.id)}
-            >
-              <CellThumb cell={cell} selected={selectedCell === cell.id} />
-              <span>
-                <strong>{cell.name}</strong>
-                <small>{cell.type}</small>
-              </span>
-              {selectedCell === cell.id && <Heart size={13} fill="currentColor" />}
-            </button>
-          ))}
+          {cells.map((cell) => {
+            const displayName = cell.custom ? cell.name : getCellTypeName(cell.id, lang)
+            const displayType = cell.custom ? cell.type : getCellTypeLabel(cell.id, lang)
+            return (
+              <button
+                key={cell.id}
+                type="button"
+                className={selectedCell === cell.id ? 'cell-row active' : 'cell-row'}
+                onClick={() => setSelectedCell(cell.id)}
+              >
+                <CellThumb cell={cell} selected={selectedCell === cell.id} />
+                <span>
+                  <strong>{displayName}</strong>
+                  <small>{displayType}</small>
+                </span>
+                {selectedCell === cell.id && <Heart size={13} fill="currentColor" />}
+              </button>
+            )
+          })}
         </div>
       </section>
 
@@ -2340,7 +2345,7 @@ function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSele
         <header className="panel-title">
           <span>
             <CircleDot size={14} />
-            Organelles
+            {t('sidebar.organelles', lang)}
           </span>
           <ChevronDown size={14} />
         </header>
@@ -2354,7 +2359,7 @@ function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSele
               style={{ '--dot': ORGANELLES[id].accent }}
             >
               <span className="dot" />
-              {ORGANELLES[id].label}
+              {getOrganelleText(id, 'label', lang)}
             </button>
           ))}
         </div>
@@ -2363,16 +2368,16 @@ function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSele
   )
 }
 
-function ViewerControls({ crossSection, setCrossSection, viewMode, setViewMode }) {
+function ViewerControls({ crossSection, setCrossSection, viewMode, setViewMode, lang }) {
   const modes = [
-    { id: 'solid', icon: Box, label: 'Solid' },
-    { id: 'layers', icon: Layers3, label: 'Layers' },
-    { id: 'focus', icon: CircleDot, label: 'Focus' },
+    { id: 'solid', icon: Box, label: t('viewer.solid', lang) },
+    { id: 'layers', icon: Layers3, label: t('viewer.layers', lang) },
+    { id: 'focus', icon: CircleDot, label: t('viewer.focus', lang) },
   ]
 
   return (
     <div className="viewer-controls">
-      <span>View Mode</span>
+      <span>{t('viewer.viewMode', lang)}</span>
       <div className="mode-buttons">
         {modes.map((mode) => {
           const Icon = mode.icon
@@ -2390,7 +2395,7 @@ function ViewerControls({ crossSection, setCrossSection, viewMode, setViewMode }
         })}
       </div>
       <label className="toggle-row">
-        <span>Cross-Section</span>
+        <span>{t('viewer.crossSection', lang)}</span>
         <input type="checkbox" checked={crossSection} onChange={(event) => setCrossSection(event.target.checked)} />
         <i />
       </label>
@@ -2398,7 +2403,7 @@ function ViewerControls({ crossSection, setCrossSection, viewMode, setViewMode }
   )
 }
 
-function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, crossSection, setCrossSection, labelVisible, renderQuality, customCells, onNotify, onExport, onExporterReady, onRetryGeneration }) {
+function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, crossSection, setCrossSection, labelVisible, renderQuality, customCells, lang, onNotify, onExport, onExporterReady, onRetryGeneration }) {
   const [viewMode, setViewMode] = useState('layers')
   const [autoRotate, setAutoRotate] = useState(false)
   const [isIsolated, setIsIsolated] = useState(false)
@@ -2504,11 +2509,11 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
     <section className="stage-panel">
       <div className="stage-title">
         <div>
-          <h1>{cell.name}</h1>
-          <p>{cell.type}</p>
+          <h1>{cell.custom ? cell.name : getCellTypeName(cell.id, lang)}</h1>
+          <p>{cell.custom ? cell.type : getCellTypeLabel(cell.id, lang)}</p>
         </div>
       </div>
-      <ViewerControls crossSection={crossSection} setCrossSection={setCrossSection} viewMode={viewMode} setViewMode={setViewMode} />
+      <ViewerControls crossSection={crossSection} setCrossSection={setCrossSection} viewMode={viewMode} setViewMode={setViewMode} lang={lang} />
       <div className={`cell-viewer ${viewMode} ${isIsolated ? 'is-isolated' : ''} ${isCinematicCell ? 'cinematic-viewer' : ''}`}>
         <ViewerErrorBoundary resetKey={viewerResetKey} onError={handleViewerError} fallback={viewerFallback}>
           {isCinematicCell ? (
@@ -2589,42 +2594,43 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
       <div className="stage-toolbar">
         <button type="button" className={autoRotate ? 'active' : ''} onClick={handleRotate} aria-pressed={autoRotate}>
           <Move3D size={14} />
-          Rotate
+          {t('toolbar.rotate', lang)}
         </button>
         <button type="button" className={isIsolated ? 'active' : ''} onClick={handleIsolate} aria-pressed={isIsolated}>
           <Eye size={14} />
-          Isolate
+          {t('toolbar.isolate', lang)}
         </button>
         <button type="button" className={hideOthers ? 'active' : ''} onClick={handleHideOthers} aria-pressed={hideOthers}>
           <Layers3 size={14} />
-          Hide Others
+          {t('toolbar.hideOthers', lang)}
         </button>
         <button type="button" onClick={handleResetView}>
           <RotateCcw size={14} />
-          Reset View
+          {t('toolbar.resetView', lang)}
         </button>
         <button type="button" className={proofMode ? 'active proof-active' : ''} onClick={handleProofMode} aria-pressed={proofMode}>
           <Box size={14} />
-          3D Proof
+          {t('toolbar.3dProof', lang)}
         </button>
         <span />
         <button type="button" onClick={handleScreenshot}>
           <Camera size={14} />
-          Screenshot
+          {t('toolbar.screenshot', lang)}
         </button>
         <button type="button" onClick={onExport}>
           <Upload size={14} />
-          3D Export
+          {t('toolbar.3dExport', lang)}
         </button>
       </div>
     </section>
   )
 }
 
-function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavoriteKey, labelVisible, setLabelVisible, onNotify }) {
+function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavoriteKey, labelVisible, setLabelVisible, lang, onNotify }) {
   const detail = getOrganelleDetail(selectedCell, selectedOrganelle)
   const currentKey = `${selectedCell}:${selectedOrganelle}`
   const isFavorite = favoriteKey === currentKey
+  const tags = getCurriculumTags(selectedOrganelle)
 
   function toggleFavorite() {
     const next = isFavorite ? '' : currentKey
@@ -2638,11 +2644,18 @@ function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavorite
     onNotify(next ? 'Stage label visible' : 'Stage label hidden')
   }
 
+  const displayTitle = getOrganelleText(selectedOrganelle, 'title', lang) || detail.title
+  const displaySubtitle = getOrganelleText(selectedOrganelle, 'subtitle', lang) || detail.subtitle
+  const displaySize = getOrganelleText(selectedOrganelle, 'size', lang) || detail.size
+  const displayLocation = getOrganelleText(selectedOrganelle, 'location', lang) || detail.location
+  const displayVisible = getOrganelleText(selectedOrganelle, 'visible', lang) || detail.visible
+  const displayNote = getOrganelleText(selectedOrganelle, 'note', lang) || detail.note
+
   return (
     <aside className="right-rail">
       <section className="panel detail-panel">
         <header className="detail-title">
-          <span>Organelle Details</span>
+          <span>{t('detail.organelleDetails', lang)}</span>
           <button type="button" className={isFavorite ? 'detail-fav active' : 'detail-fav'} onClick={toggleFavorite} aria-pressed={isFavorite}>
             <Heart size={15} fill={isFavorite ? 'currentColor' : 'none'} />
           </button>
@@ -2655,25 +2668,25 @@ function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavorite
             <span />
           </div>
           <div>
-            <h2>{detail.title}</h2>
-            <p>{detail.subtitle}</p>
+            <h2>{displayTitle}</h2>
+            <p>{displaySubtitle}</p>
           </div>
         </div>
         <dl className="detail-grid">
           <div>
-            <dt>Size</dt>
-            <dd>{detail.size}</dd>
+            <dt>{t('detail.size', lang)}</dt>
+            <dd>{displaySize}</dd>
           </div>
           <div>
-            <dt>Location</dt>
-            <dd>{detail.location}</dd>
+            <dt>{t('detail.location', lang)}</dt>
+            <dd>{displayLocation}</dd>
           </div>
           <div>
-            <dt>Visible in LM</dt>
-            <dd>{detail.visible}</dd>
+            <dt>{t('detail.visibleInLM', lang)}</dt>
+            <dd>{displayVisible}</dd>
           </div>
           <div>
-            <dt>Label</dt>
+            <dt>{t('detail.label', lang)}</dt>
             <dd>
               <button type="button" className={labelVisible ? 'mini-toggle active' : 'mini-toggle'} onClick={toggleLabel} aria-pressed={labelVisible} aria-label="Toggle label" />
               <span className="color-dot" style={{ background: detail.accent }} />
@@ -2684,15 +2697,34 @@ function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavorite
 
       <section className="panel notes-panel">
         <header className="panel-title">
-          <span>Biological Notes</span>
+          <span>{t('detail.biologicalNotes', lang)}</span>
         </header>
-        <p>{detail.note}</p>
-        <blockquote>{detail.funFact ?? 'Some white blood cells can change shape to squeeze between blood vessel walls and reach infected tissue.'}</blockquote>
+        <p>{displayNote}</p>
+        {detail.funFact && <blockquote>{detail.funFact}</blockquote>}
       </section>
+
+      {tags.length > 0 && (
+        <section className="panel curriculum-panel">
+          <header className="panel-title">
+            <span>{t('detail.curriculum', lang)}</span>
+          </header>
+          <div className="curriculum-tags">
+            {tags.map((tag) => (
+              <div key={tag.level} className="curriculum-tag" data-level={tag.level}>
+                <span className="tag-badge">{tag.level}</span>
+                <div>
+                  <strong>{tag.topic}</strong>
+                  <small>{tag.detail}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="panel occurs-panel">
         <header className="panel-title">
-          <span>Where It Occurs</span>
+          <span>{t('detail.whereItOccurs', lang)}</span>
         </header>
         <div className="body-map">
           <div className="body-line" />
@@ -2706,7 +2738,7 @@ function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavorite
   )
 }
 
-function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, uploadedImage, generationMode, onGenerationModeChange, compareCell, onUploadImage, onCompare, onNotify }) {
+function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, uploadedImage, generationMode, onGenerationModeChange, compareCell, onUploadImage, onCompare, lang, onNotify }) {
   const fileInputRef = useRef(null)
   const selected = getCell(selectedCell)
   const compareTarget = getCell(compareCell)
@@ -2714,18 +2746,18 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
 
   function handleMicroscopeSelect(item) {
     setSelectedMicroscope(item.label)
-    onNotify(item.note)
+    onNotify(getMicroscopeText(item.label, 'note', lang))
   }
 
   return (
     <section className="bottom-deck">
       <div className="panel media-panel">
         <header className="panel-title">
-          <span>Microscope View</span>
+          <span>{t('bottom.microscopeView', lang)}</span>
           <small>3</small>
         </header>
         <div className="generation-mode-row">
-          <span>Generate Mode</span>
+          <span>{t('bottom.generateMode', lang)}</span>
           <div className="generation-mode-pills">
             {GENERATION_MODE_OPTIONS.map((mode) => (
               <button
@@ -2752,7 +2784,7 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
               onClick={() => handleMicroscopeSelect(item)}
             >
               <span />
-              <small>{item.label}</small>
+              <small>{getMicroscopeText(item.label, 'label', lang)}</small>
             </button>
           ))}
           <button
@@ -2762,7 +2794,7 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
             onClick={() => fileInputRef.current?.click()}
           >
             {uploadedImage?.url ? <Image size={16} /> : <Box size={16} />}
-            {uploadedImage?.name || 'Add Image / GLB'}
+            {uploadedImage?.name || t('bottom.addImage', lang)}
           </button>
           <input
             ref={fileInputRef}
@@ -2781,20 +2813,20 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
 
       <div className="panel compare-panel">
         <header className="panel-title">
-          <span>Compare Cells</span>
+          <span>{t('bottom.compareCells', lang)}</span>
           <small>2</small>
         </header>
         <button type="button" className="compare-box" onClick={() => onCompare(compareTarget.id)}>
           <CellThumb cell={selected} selected />
           <div>
-            <strong>{selected.name.replace(' Cell', '')}</strong>
-            <small>{selected.type}</small>
+            <strong>{selected.custom ? selected.name : getCellTypeName(selected.id, lang)}</strong>
+            <small>{selected.custom ? selected.type : getCellTypeLabel(selected.id, lang)}</small>
           </div>
-          <span className="versus">VS</span>
+          <span className="versus">{t('misc.vs', lang)}</span>
           <CellThumb cell={compareTarget} />
           <div>
-            <strong>{compareTarget.name}</strong>
-            <small>{compareTarget.type.replace('Human ', '')}</small>
+            <strong>{compareTarget.custom ? compareTarget.name : getCellTypeName(compareTarget.id, lang)}</strong>
+            <small>{compareTarget.custom ? compareTarget.type : getCellTypeLabel(compareTarget.id, lang)}</small>
           </div>
         </button>
       </div>
@@ -2802,7 +2834,7 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
   )
 }
 
-function StudioHeader({ activePanel, setActivePanel, onNotify }) {
+function StudioHeader({ activePanel, setActivePanel, onNotify, lang, toggleLang }) {
   function openPanel(panel) {
     const next = activePanel === panel ? null : panel
     setActivePanel(next)
@@ -2816,26 +2848,29 @@ function StudioHeader({ activePanel, setActivePanel, onNotify }) {
           <CellThumb cell={CELL_TYPES[1]} selected />
         </div>
         <div>
-          <strong>Cell Architecture Studio</strong>
-          <span>Explore life at the microscopic level</span>
+          <strong>{t('app.title', lang)}</strong>
+          <span>{t('app.subtitle', lang)}</span>
         </div>
       </div>
       <nav className="studio-nav">
         <button type="button" className={activePanel === 'Gallery' ? 'active' : ''} onClick={() => openPanel('Gallery')}>
           <Grid3X3 size={15} />
-          Gallery
+          {t('nav.gallery', lang)}
         </button>
         <button type="button" className={activePanel === 'Library' ? 'active' : ''} onClick={() => openPanel('Library')}>
           <Library size={15} />
-          Library
+          {t('nav.library', lang)}
         </button>
         <button type="button" className={activePanel === 'Notebooks' ? 'active' : ''} onClick={() => openPanel('Notebooks')}>
           <BookOpen size={15} />
-          Notebooks
+          {t('nav.notebooks', lang)}
         </button>
         <button type="button" className={activePanel === 'Settings' ? 'active' : ''} onClick={() => openPanel('Settings')}>
           <Settings size={15} />
-          Settings
+          {t('nav.settings', lang)}
+        </button>
+        <button type="button" className="lang-toggle" onClick={toggleLang} title={lang === 'en' ? 'Switch to Chinese' : '切换到英文'}>
+          {t('misc.language', lang)}
         </button>
       </nav>
       <button type="button" className={activePanel === 'Profile' ? 'profile-button active' : 'profile-button'} onClick={() => openPanel('Profile')}>
@@ -3148,6 +3183,7 @@ function App() {
   const [galleryItems, setGalleryItems] = useState(() => loadStoredValue('bio-demo-gallery', []))
   const [notes, setNotes] = useState(() => loadStoredValue('bio-demo-notes', {}))
   const [settings, setSettings] = useState(() => normalizeSettings(loadStoredValue(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)))
+  const [lang, setLang] = useState(() => loadStoredValue('bio-demo-lang', 'zh'))
   const allCells = useMemo(() => getAllCells(customCells), [customCells])
 
   useEffect(() => {
@@ -3161,6 +3197,12 @@ function App() {
   useEffect(() => {
     storeValue(SETTINGS_STORAGE_KEY, settings)
   }, [settings])
+
+  useEffect(() => {
+    storeValue('bio-demo-lang', lang)
+  }, [lang])
+
+  const toggleLang = () => setLang((prev) => (prev === 'en' ? 'zh' : 'en'))
 
   useEffect(() => {
     storeValue('bio-demo-label-visible', labelVisible)
@@ -3535,7 +3577,7 @@ function App() {
   return (
     <main className={settings.compactUi ? 'studio-shell compact-ui' : 'studio-shell'}>
       <motion.div className="studio-window" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
-        <StudioHeader activePanel={activePanel} setActivePanel={setActivePanel} onNotify={setToast} />
+        <StudioHeader activePanel={activePanel} setActivePanel={setActivePanel} onNotify={setToast} lang={lang} toggleLang={toggleLang} />
         <WorkspaceDrawer
           activePanel={activePanel}
           selectedCell={selectedCell}
@@ -3550,6 +3592,7 @@ function App() {
           selectedMicroscope={selectedMicroscope}
           uploadedImage={uploadedImage}
           favoriteKey={favoriteKey}
+          lang={lang}
           onClose={() => setActivePanel(null)}
           onSelectCell={handleSelectCell}
           onSelectOrganelle={setSelectedOrganelle}
@@ -3574,6 +3617,7 @@ function App() {
             selectedOrganelle={selectedOrganelle}
             setSelectedOrganelle={setSelectedOrganelle}
             customCells={customCells}
+            lang={lang}
           />
           <CenterStage
             selectedCell={selectedCell}
@@ -3584,6 +3628,7 @@ function App() {
             labelVisible={labelVisible}
             renderQuality={settings.quality}
             customCells={customCells}
+            lang={lang}
             onNotify={setToast}
             onExport={handleExport}
             onExporterReady={setSceneExporter}
@@ -3596,6 +3641,7 @@ function App() {
             setFavoriteKey={setFavoriteKey}
             labelVisible={labelVisible}
             setLabelVisible={setLabelVisible}
+            lang={lang}
             onNotify={setToast}
           />
           <BottomDeck
@@ -3608,6 +3654,7 @@ function App() {
             onUploadImage={handleUploadImage}
             compareCell={compareCell}
             onCompare={handleOpenCompare}
+            lang={lang}
             onNotify={setToast}
           />
         </div>
