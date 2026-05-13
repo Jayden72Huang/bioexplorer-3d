@@ -70,11 +70,47 @@ const translations = {
   'gen.failed': { en: 'Generation failed', zh: '生成失败' },
   'gen.retry': { en: 'Retry', zh: '重试' },
 
+  // Library
+  'library.title': { en: '3D Model Library', zh: '3D 模型图书馆' },
+  'library.search': { en: 'Search cells or organelles...', zh: '搜索细胞或细胞器...' },
+  'library.createCustom': { en: 'Create Custom Model', zh: '创建自定义模型' },
+  'library.all': { en: 'All', zh: '全部' },
+  'library.modelsReady': { en: 'models ready', zh: '个模型可用' },
+  'library.noMatch': { en: 'No matching models found', zh: '未找到匹配的模型' },
+  'library.clearFilters': { en: 'Clear filters', zh: '清除筛选' },
+  'library.pending': { en: 'Pending', zh: '待生成' },
+
+  // Generate Modal
+  'generate.title': { en: 'Create Custom 3D Model', zh: '创建自定义 3D 模型' },
+  'generate.enterName': { en: 'Enter cell name', zh: '输入细胞名称' },
+  'generate.namePlaceholder': { en: 'e.g. red blood cell, 红细胞', zh: '例如：红细胞、stem cell' },
+  'generate.or': { en: 'or', zh: '或者' },
+  'generate.uploadImage': { en: 'Upload reference image', zh: '上传参考图片' },
+  'generate.start': { en: 'Generate', zh: '开始生成' },
+  'generate.creatingImage': { en: 'Creating reference image...', zh: '生成参考图中...' },
+  'generate.building3d': { en: 'Building 3D model...', zh: '构建 3D 模型中...' },
+  'generate.ready': { en: 'Model ready!', zh: '模型已就绪！' },
+  'generate.timeHint': { en: 'Usually takes 2-5 minutes', zh: '通常需要 2-5 分钟' },
+
+  // Mode Toggle
+  'mode.library': { en: 'Library', zh: '图书馆' },
+  'mode.viewer': { en: 'Viewer', zh: '查看器' },
+
+  // Interaction Modes
+  'interact.observe': { en: 'Observe', zh: '观察' },
+  'interact.annotate': { en: 'Annotate', zh: '批注' },
+  'interact.focus': { en: 'Focus', zh: '聚焦' },
+  'annotation.title': { en: 'Annotation', zh: '批注' },
+  'annotation.placeholder': { en: 'Write your annotation for this organelle...', zh: '写下你对这个细胞器的批注...' },
+  'annotation.chars': { en: 'chars', zh: '字' },
+  'annotation.autosaved': { en: 'Autosaved', zh: '自动保存' },
+  'annotation.hasNote': { en: 'Has annotation', zh: '已有批注' },
+
   // Misc
   'misc.loaded': { en: 'loaded', zh: '已加载' },
   'misc.ready': { en: 'ready', zh: '已就绪' },
   'misc.vs': { en: 'VS', zh: 'VS' },
-  'misc.language': { en: '中文', zh: 'EN' },
+  'misc.language': { en: 'EN', zh: '中文' },
 }
 
 const cellTypeTranslations = {

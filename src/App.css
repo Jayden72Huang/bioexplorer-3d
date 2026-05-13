@@ -1,6 +1,5 @@
 .studio-shell {
   min-height: 100vh;
-  padding: 18px;
   color: #2f2b25;
   background:
     linear-gradient(180deg, #f7f8f6 0%, #eef3f4 100%),
@@ -9,17 +8,10 @@
 
 .studio-window {
   position: relative;
-  width: min(1036px, calc(100vw - 36px));
-  height: min(586px, calc(100vh - 36px));
-  min-height: 560px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100vh;
   overflow: hidden;
-  border: 1px solid #b8c6cc;
-  border-radius: 8px;
   background: #f3eddf;
-  box-shadow:
-    0 26px 70px rgba(62, 70, 73, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.64);
 }
 
 .studio-header {
@@ -1573,13 +1565,16 @@
   left: 12px;
   right: 12px;
   bottom: 10px;
-  display: grid;
-  grid-template-columns: repeat(5, auto) 1fr repeat(2, auto);
+  display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.stage-toolbar button {
+.stage-toolbar > span {
+  flex: 1;
+}
+
+.stage-toolbar > button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1593,16 +1588,62 @@
   backdrop-filter: blur(10px);
 }
 
-.stage-toolbar button.active {
+.stage-toolbar > button.active {
   color: #2f6b8a;
   border-color: #9bc5d8;
   background: rgba(228, 242, 248, 0.86);
 }
 
-.stage-toolbar button.proof-active {
-  color: #294f88;
-  border-color: rgba(70, 116, 180, 0.42);
-  background: rgba(220, 236, 255, 0.92);
+.interaction-modes {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(112, 101, 84, 0.15);
+  border-radius: 10px;
+  background: rgba(252, 248, 239, 0.6);
+  backdrop-filter: blur(10px);
+}
+
+.interaction-modes button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #4e453d;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.interaction-modes button:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.interaction-modes button.active {
+  color: #2f6b8a;
+  border-color: #9bc5d8;
+  background: rgba(228, 242, 248, 0.86);
+}
+
+.interaction-modes button.annotate-active {
+  color: #7c3aed;
+  border-color: rgba(139, 92, 246, 0.42);
+  background: rgba(237, 233, 254, 0.86);
+}
+
+.interaction-modes button.focus-active {
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.42);
+  background: rgba(254, 243, 199, 0.86);
+}
+
+.cell-viewer.annotate-mode canvas {
+  cursor: crosshair !important;
 }
 
 .detail-title {
@@ -1745,6 +1786,68 @@
 
 .mini-toggle.active::after {
   transform: translateX(11px);
+}
+
+/* Annotation Panel */
+.annotation-panel {
+  border-color: rgba(139, 92, 246, 0.25);
+  background: rgba(237, 233, 254, 0.18);
+}
+
+.annotation-panel .panel-title {
+  color: #7c3aed;
+}
+
+.annotation-panel .panel-title span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.annotation-editor {
+  padding: 0 12px 12px;
+}
+
+.annotation-editor textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #3b332c;
+  background: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.annotation-editor textarea:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.annotation-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  color: #9a897a;
+  font-size: 9px;
+}
+
+.annotation-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+  flex-shrink: 0;
 }
 
 .notes-panel p {
@@ -2015,16 +2118,9 @@ input:focus-visible + i {
 }
 
 @media (max-width: 980px) {
-  .studio-shell {
-    padding: 0;
-  }
-
   .studio-window {
-    width: 100vw;
     height: auto;
     min-height: 100vh;
-    border: 0;
-    border-radius: 0;
     overflow: visible;
   }
 

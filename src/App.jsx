@@ -1,6 +1,7 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { ContactShadows, Line, OrbitControls, RoundedBox, useGLTF, useTexture } from '@react-three/drei'
+import { EffectComposer, Outline, Selection, Select } from '@react-three/postprocessing'
 import { motion } from 'framer-motion'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import {
@@ -17,6 +18,7 @@ import {
   Layers3,
   Library,
   Move3D,
+  Pencil,
   RotateCcw,
   Settings,
   Sparkles as SparklesIcon,
@@ -26,6 +28,8 @@ import {
 import * as THREE from 'three'
 import plantCellRender from './assets/cell-plant-render.png'
 import { t, getCellTypeName, getCellTypeLabel, getOrganelleText, getCellProfileText, getMicroscopeText, getCurriculumTags } from './i18n.js'
+import LibraryView from './components/LibraryView.jsx'
+import './components/LibraryView.css'
 import './App.css'
 
 const CELL_TYPES = [
@@ -71,6 +75,23 @@ const SEEDED_GENERATED_CELLS = [
       modelUrl: '/generated-models/tripo-plant-cell-test.glb',
       rawModelUrl: '',
       message: 'Cached GLB from the verified Tripo test run.',
+    },
+  },
+  {
+    id: 'tripo-animal-cell',
+    name: 'Animal Cell 3D',
+    type: 'AI Generated Animal Cell',
+    accent: '#459ccf',
+    custom: true,
+    template: 'animal',
+    imageUrl: '/cell-references/animal-cell.png',
+    generation: {
+      provider: 'tripo',
+      status: 'success',
+      taskId: 'b7de8c16-844d-4636-9180-b2eb79eb2eb5',
+      modelUrl: '/generated-models/tripo-animal-cell.glb',
+      rawModelUrl: '',
+      message: 'Pre-cached Tripo GLB.',
     },
   },
 ]
@@ -1230,17 +1251,19 @@ function pickSpherePoint(index, radius = 1) {
   ]
 }
 
-function ClickableGroup({ id, onSelect, children, ...props }) {
+function ClickableGroup({ id, onSelect, isSelected = false, children, ...props }) {
   return (
-    <group
-      {...props}
-      onClick={(event) => {
-        event.stopPropagation()
-        onSelect(id)
-      }}
-    >
-      {children}
-    </group>
+    <Select enabled={isSelected}>
+      <group
+        {...props}
+        onClick={(event) => {
+          event.stopPropagation()
+          onSelect(id)
+        }}
+      >
+        {children}
+      </group>
+    </Select>
   )
 }
 
@@ -1452,7 +1475,7 @@ function PlantCellModel({ selected, crossSection, onSelect, hideOthers, proofMod
 
   return (
     <group ref={group} scale={1.12} rotation={[-0.54, -0.18, 0.02]}>
-        <ClickableGroup id="membrane" onSelect={onSelect}>
+        <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
           <RoundedBox args={[3.45, 2.16, 0.42]} radius={0.18} smoothness={8} position={[0, 0, 0.02]}>
             <meshPhysicalMaterial color="#87a944" roughness={0.46} clearcoat={0.55} clearcoatRoughness={0.42} sheen={0.35} sheenColor="#dbe68e" />
           </RoundedBox>
@@ -1478,7 +1501,7 @@ function PlantCellModel({ selected, crossSection, onSelect, hideOthers, proofMod
         </ClickableGroup>
 
         {show('granules') && (
-        <ClickableGroup id="granules" onSelect={onSelect} position={proofOffset('granules')}>
+        <ClickableGroup id="granules" onSelect={onSelect} isSelected={selected === 'granules'} position={proofOffset('granules')}>
           <mesh position={[-0.5, -0.05, 0.48]} rotation={[0.02, -0.1, -0.18]} scale={[0.58, 0.92, 0.16]}>
             <sphereGeometry args={[0.7, 56, 56]} />
             <meshPhysicalMaterial color="#6cc8ee" transparent opacity={0.84} roughness={0.08} clearcoat={0.88} clearcoatRoughness={0.08} transmission={0.1} />
@@ -1495,7 +1518,7 @@ function PlantCellModel({ selected, crossSection, onSelect, hideOthers, proofMod
         )}
 
         {show('nucleus') && (
-        <ClickableGroup id="nucleus" onSelect={onSelect} position={[0.55 + proofOffset('nucleus')[0], 0.38 + proofOffset('nucleus')[1], 0.6 + proofOffset('nucleus')[2]]}>
+        <ClickableGroup id="nucleus" onSelect={onSelect} isSelected={selected === 'nucleus'} position={[0.55 + proofOffset('nucleus')[0], 0.38 + proofOffset('nucleus')[1], 0.6 + proofOffset('nucleus')[2]]}>
           <mesh scale={[0.56, 0.5, 0.28]}>
             <sphereGeometry args={[0.58, 72, 72]} />
             <meshPhysicalMaterial color="#8d55c7" roughness={0.36} clearcoat={0.35} transparent opacity={0.9} />
@@ -1521,7 +1544,7 @@ function PlantCellModel({ selected, crossSection, onSelect, hideOthers, proofMod
         )}
 
         {show('mitochondria') && (
-        <ClickableGroup id="mitochondria" onSelect={onSelect} position={proofOffset('mitochondria')}>
+        <ClickableGroup id="mitochondria" onSelect={onSelect} isSelected={selected === 'mitochondria'} position={proofOffset('mitochondria')}>
           <PlantMitochondrion position={[-1.1, 0.48, 0.58]} rotation={[0.2, 0.18, -0.42]} scale={0.82} />
           <PlantMitochondrion position={[1.2, 0.3, 0.56]} rotation={[0.2, -0.18, 0.62]} scale={0.88} />
           <PlantMitochondrion position={[-0.85, -0.78, 0.55]} rotation={[0.15, 0.2, 1.45]} scale={0.82} />
@@ -1529,7 +1552,7 @@ function PlantCellModel({ selected, crossSection, onSelect, hideOthers, proofMod
         )}
 
         {show('granules') && (
-        <ClickableGroup id="granules" onSelect={onSelect} position={proofOffset('chloroplasts')}>
+        <ClickableGroup id="granules" onSelect={onSelect} isSelected={selected === 'granules'} position={proofOffset('chloroplasts')}>
           <PlantChloroplast position={[-1.18, -0.38, 0.58]} rotation={[0.15, -0.22, -0.9]} scale={1.05} />
           <PlantChloroplast position={[-1.02, 0.76, 0.54]} rotation={[0.2, -0.1, -1.12]} scale={0.95} />
           <PlantChloroplast position={[1.15, -0.58, 0.55]} rotation={[0.16, 0.12, 0.82]} scale={1.03} />
@@ -1549,11 +1572,11 @@ function CellBodyGeometry({ kind }) {
   return <sphereGeometry args={[1.32, 96, 96]} />
 }
 
-function CellSpecificStructures({ cellId, onSelect }) {
+function CellSpecificStructures({ cellId, onSelect, selected }) {
   if (cellId === 'neuron') {
     return (
       <group>
-        <ClickableGroup id="membrane" onSelect={onSelect}>
+        <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
           {[
             [
               [-0.72, 0.2, 0.12],
@@ -1603,7 +1626,7 @@ function CellSpecificStructures({ cellId, onSelect }) {
 
     return (
       <group>
-        <ClickableGroup id="granules" onSelect={onSelect}>
+        <ClickableGroup id="granules" onSelect={onSelect} isSelected={selected === 'granules'}>
           <Line points={dna} color="#5b7fdf" lineWidth={3} transparent opacity={0.78} />
           {Array.from({ length: 32 }, (_, index) => (
             <mesh key={index} position={[(seeded(index) - 0.5) * 2.2, (seeded(index + 20) - 0.5) * 0.48, 0.24 + seeded(index + 40) * 0.2]}>
@@ -1612,7 +1635,7 @@ function CellSpecificStructures({ cellId, onSelect }) {
             </mesh>
           ))}
         </ClickableGroup>
-        <ClickableGroup id="membrane" onSelect={onSelect}>
+        <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
           <Line points={[[1.54, -0.05, 0.02], [2.18, -0.22, -0.05], [2.8, -0.02, -0.1], [3.38, 0.2, -0.14]]} color="#52b788" lineWidth={3.4} transparent opacity={0.72} />
           {[-0.8, -0.42, 0, 0.42, 0.8].map((x, index) => (
             <Line
@@ -1635,7 +1658,7 @@ function CellSpecificStructures({ cellId, onSelect }) {
   if (cellId === 'muscle') {
     return (
       <group>
-        <ClickableGroup id="membrane" onSelect={onSelect}>
+        <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
           {[-1.08, -0.78, -0.48, -0.18, 0.12, 0.42, 0.72, 1.02].map((x) => (
             <Line key={x} points={[[x, -0.38, 0.26], [x + 0.16, 0.38, 0.26]]} color="#f8c4ca" lineWidth={2.2} transparent opacity={0.84} />
           ))}
@@ -1647,7 +1670,7 @@ function CellSpecificStructures({ cellId, onSelect }) {
 
   if (cellId === 'epithelial') {
     return (
-      <ClickableGroup id="membrane" onSelect={onSelect}>
+      <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
         {[-0.72, -0.36, 0, 0.36, 0.72].map((x) => (
           <Line key={x} points={[[x, 0.58, 0.38], [x + 0.03, 0.92, 0.38]]} color="#b96363" lineWidth={2} transparent opacity={0.64} />
         ))}
@@ -1660,7 +1683,7 @@ function CellSpecificStructures({ cellId, onSelect }) {
 
   if (cellId === 'white-blood') {
     return (
-      <ClickableGroup id="membrane" onSelect={onSelect}>
+      <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
         {[
           [-1.38, -0.08, 0.02, -0.5],
           [1.36, 0.18, 0.04, 0.52],
@@ -1678,7 +1701,7 @@ function CellSpecificStructures({ cellId, onSelect }) {
 
   if (cellId === 'animal') {
     return (
-      <ClickableGroup id="granules" onSelect={onSelect}>
+      <ClickableGroup id="granules" onSelect={onSelect} isSelected={selected === 'granules'}>
         {[[-0.68, 0.64, 0.36], [0.72, -0.38, 0.4], [0.45, 0.62, 0.28]].map((position, index) => (
           <mesh key={index} position={position} scale={[0.22, 0.16, 0.16]}>
             <sphereGeometry args={[1, 28, 28]} />
@@ -1761,7 +1784,7 @@ function CellModel({ cellId, selected, crossSection, onSelect, hideOthers, proof
 
   return (
       <group ref={group} scale={1.22} rotation={[-0.08, -0.42, 0.05]}>
-        <ClickableGroup id="membrane" onSelect={onSelect}>
+        <ClickableGroup id="membrane" onSelect={onSelect} isSelected={selected === 'membrane'}>
           <mesh scale={body.scale} rotation={bodyRotation}>
             <CellBodyGeometry kind={body.kind} />
             <meshPhysicalMaterial
@@ -1789,7 +1812,7 @@ function CellModel({ cellId, selected, crossSection, onSelect, hideOthers, proof
         )}
 
         {show('nucleus') && cellId !== 'bacteria' && (
-        <ClickableGroup id="nucleus" onSelect={onSelect} position={[-0.2 + proofOffset('nucleus')[0], 0.12 + proofOffset('nucleus')[1], 0.28 + proofOffset('nucleus')[2]]} rotation={[0.2, -0.12, -0.32]}>
+        <ClickableGroup id="nucleus" onSelect={onSelect} isSelected={selected === 'nucleus'} position={[-0.2 + proofOffset('nucleus')[0], 0.12 + proofOffset('nucleus')[1], 0.28 + proofOffset('nucleus')[2]]} rotation={[0.2, -0.12, -0.32]}>
           <mesh position={[-0.25, 0.18, 0]} scale={[0.72, 0.5, 0.44]}>
             <sphereGeometry args={[0.48, 64, 64]} />
             <meshPhysicalMaterial color="#6f3a9b" roughness={0.36} clearcoat={0.32} emissive="#4c1d95" emissiveIntensity={0.08} />
@@ -1812,7 +1835,7 @@ function CellModel({ cellId, selected, crossSection, onSelect, hideOthers, proof
         )}
 
         {show('granules') && (
-        <ClickableGroup id="granules" onSelect={onSelect} position={proofOffset('granules')}>
+        <ClickableGroup id="granules" onSelect={onSelect} isSelected={selected === 'granules'} position={proofOffset('granules')}>
           {granules.map((granule, index) => (
             <mesh key={index} position={granule.position}>
               <sphereGeometry args={[granule.radius, 18, 18]} />
@@ -1828,7 +1851,7 @@ function CellModel({ cellId, selected, crossSection, onSelect, hideOthers, proof
         )}
 
         {show('lysosome') && cellId !== 'bacteria' && cellId !== 'muscle' && (
-        <ClickableGroup id="lysosome" onSelect={onSelect} position={proofOffset('lysosome')}>
+        <ClickableGroup id="lysosome" onSelect={onSelect} isSelected={selected === 'lysosome'} position={proofOffset('lysosome')}>
           {lysosomes.map((lysosome, index) => (
             <mesh key={index} position={lysosome.position}>
               <sphereGeometry args={[lysosome.radius, 24, 24]} />
@@ -1844,7 +1867,7 @@ function CellModel({ cellId, selected, crossSection, onSelect, hideOthers, proof
         )}
 
         {show('mitochondria') && cellId !== 'bacteria' && (
-        <ClickableGroup id="mitochondria" onSelect={onSelect} position={proofOffset('mitochondria')}>
+        <ClickableGroup id="mitochondria" onSelect={onSelect} isSelected={selected === 'mitochondria'} position={proofOffset('mitochondria')}>
           {[
             [-0.78, -0.55, 0.48, 0.38],
             [0.7, 0.1, 0.46, -0.35],
@@ -1865,14 +1888,14 @@ function CellModel({ cellId, selected, crossSection, onSelect, hideOthers, proof
         )}
 
         {show('granules') && cellId !== 'bacteria' && (
-        <ClickableGroup id="granules" onSelect={onSelect}>
+        <ClickableGroup id="granules" onSelect={onSelect} isSelected={selected === 'granules'}>
           {erLines.map((points, index) => (
             <Line key={index} points={points} color="#d65e85" lineWidth={2.4} transparent opacity={0.78} />
           ))}
         </ClickableGroup>
         )}
 
-        <CellSpecificStructures cellId={cellId} onSelect={onSelect} />
+        <CellSpecificStructures cellId={cellId} onSelect={onSelect} selected={selected} />
       </group>
   )
 }
@@ -2194,26 +2217,31 @@ function CellScene({ selectedCell, modelCellId, referenceImageUrl, generatedMode
       fallback={<CellFallback selectedCell={selectedCell} modelCellId={modelCellId} referenceImageUrl={referenceImageUrl} selectedOrganelle={selectedOrganelle} onSelectOrganelle={onSelectOrganelle} />}
     >
       <color attach="background" args={['#f5efdf']} />
-      <ambientLight intensity={0.82} />
-      <directionalLight castShadow position={[4, 5, 5]} intensity={3.4} color="#fff7ed" shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-4.5, 2.6, 3]} intensity={1.65} color="#dbeafe" />
-      <pointLight position={[0, -3.2, 2.4]} intensity={1.35} color="#f9a8d4" />
-      <pointLight position={[-2.4, 1.2, 1.6]} intensity={0.75} color="#b8f7a6" />
-      {proofMode && <ProofRig />}
-      <group ref={exportRoot} name={`${selectedCell}-cell-export-root`}>
-        {generatedModelUrl ? (
-          <Suspense fallback={null}>
-            <GeneratedGlbModel modelUrl={apiUrl(generatedModelUrl)} proofMode={proofMode} onSelect={onSelectOrganelle} />
-          </Suspense>
-        ) : isPlant ? (
-          <PlantCellModel selected={selectedOrganelle} crossSection={crossSection} hideOthers={hideOthers} proofMode={proofMode} onSelect={onSelectOrganelle} />
-        ) : (
-          <CellModel cellId={modelCellId} selected={selectedOrganelle} crossSection={crossSection} hideOthers={hideOthers} proofMode={proofMode} onSelect={onSelectOrganelle} />
-        )}
-      </group>
-      <SceneExportBridge exportRoot={exportRoot} onExporterReady={onExporterReady} />
-      <ContactShadows frames={1} position={[0, -1.32, 0]} opacity={0.2} scale={5.4} blur={2.4} far={2.8} color="#8a7355" />
-      <OrbitControls enablePan={false} minDistance={proofMode ? 4 : 3.3} maxDistance={proofMode ? 7.4 : 6.4} enableDamping dampingFactor={0.08} autoRotate={autoRotate || proofMode} autoRotateSpeed={proofMode ? 0.75 : 0.45} />
+      <Selection>
+        <ambientLight intensity={0.82} />
+        <directionalLight castShadow position={[4, 5, 5]} intensity={3.4} color="#fff7ed" shadow-mapSize={[1024, 1024]} />
+        <directionalLight position={[-4.5, 2.6, 3]} intensity={1.65} color="#dbeafe" />
+        <pointLight position={[0, -3.2, 2.4]} intensity={1.35} color="#f9a8d4" />
+        <pointLight position={[-2.4, 1.2, 1.6]} intensity={0.75} color="#b8f7a6" />
+        {proofMode && <ProofRig />}
+        <group ref={exportRoot} name={`${selectedCell}-cell-export-root`}>
+          {generatedModelUrl ? (
+            <Suspense fallback={null}>
+              <GeneratedGlbModel modelUrl={apiUrl(generatedModelUrl)} proofMode={proofMode} onSelect={onSelectOrganelle} />
+            </Suspense>
+          ) : isPlant ? (
+            <PlantCellModel selected={selectedOrganelle} crossSection={crossSection} hideOthers={hideOthers} proofMode={proofMode} onSelect={onSelectOrganelle} />
+          ) : (
+            <CellModel cellId={modelCellId} selected={selectedOrganelle} crossSection={crossSection} hideOthers={hideOthers} proofMode={proofMode} onSelect={onSelectOrganelle} />
+          )}
+        </group>
+        <SceneExportBridge exportRoot={exportRoot} onExporterReady={onExporterReady} />
+        <ContactShadows frames={1} position={[0, -1.32, 0]} opacity={0.2} scale={5.4} blur={2.4} far={2.8} color="#8a7355" />
+        <OrbitControls enablePan={false} minDistance={proofMode ? 4 : 3.3} maxDistance={proofMode ? 7.4 : 6.4} enableDamping dampingFactor={0.08} autoRotate={autoRotate || proofMode} autoRotateSpeed={proofMode ? 0.75 : 0.45} />
+        <EffectComposer multisampling={4} autoClear={false}>
+          <Outline visibleEdgeColor={0x7c55b9} hiddenEdgeColor={0x5a3d8a} edgeStrength={4} pulseSpeed={0.4} blur kernelSize={1} xRay={false} />
+        </EffectComposer>
+      </Selection>
     </Canvas>
   )
 }
@@ -2304,7 +2332,7 @@ function CellThumb({ cell, selected }) {
   )
 }
 
-function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSelectedOrganelle, customCells, lang }) {
+function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSelectedOrganelle, customCells, lang, notes }) {
   const cells = getPrimaryCells(customCells)
   const availableOrganelles = getAvailableOrganelleIds(selectedCell)
 
@@ -2360,6 +2388,7 @@ function LeftSidebar({ selectedCell, setSelectedCell, selectedOrganelle, setSele
             >
               <span className="dot" />
               {getOrganelleText(id, 'label', lang)}
+              {notes[`${selectedCell}:${id}`] && <span className="annotation-badge"><Pencil size={9} /></span>}
             </button>
           ))}
         </div>
@@ -2403,7 +2432,7 @@ function ViewerControls({ crossSection, setCrossSection, viewMode, setViewMode, 
   )
 }
 
-function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, crossSection, setCrossSection, labelVisible, renderQuality, customCells, lang, onNotify, onExport, onExporterReady, onRetryGeneration }) {
+function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, crossSection, setCrossSection, labelVisible, renderQuality, customCells, lang, onNotify, onExport, onExporterReady, onRetryGeneration, interactionMode, setInteractionMode, notes, onUpdateNote }) {
   const [viewMode, setViewMode] = useState('layers')
   const [autoRotate, setAutoRotate] = useState(false)
   const [isIsolated, setIsIsolated] = useState(false)
@@ -2469,8 +2498,18 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
     setHideOthers(false)
     setProofMode(false)
     setViewMode('layers')
+    setInteractionMode('observe')
     setResetNonce((value) => value + 1)
     onNotify('View reset')
+  }
+
+  function handleOrganelleClick(organelleId) {
+    setSelectedOrganelle(organelleId)
+    if (interactionMode === 'focus') {
+      setHideOthers(true)
+      setIsIsolated(true)
+      setViewMode('focus')
+    }
   }
 
   function handleProofMode() {
@@ -2514,13 +2553,13 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
         </div>
       </div>
       <ViewerControls crossSection={crossSection} setCrossSection={setCrossSection} viewMode={viewMode} setViewMode={setViewMode} lang={lang} />
-      <div className={`cell-viewer ${viewMode} ${isIsolated ? 'is-isolated' : ''} ${isCinematicCell ? 'cinematic-viewer' : ''}`}>
+      <div className={`cell-viewer ${viewMode} ${isIsolated ? 'is-isolated' : ''} ${isCinematicCell ? 'cinematic-viewer' : ''} ${interactionMode === 'annotate' ? 'annotate-mode' : ''}`}>
         <ViewerErrorBoundary resetKey={viewerResetKey} onError={handleViewerError} fallback={viewerFallback}>
           {isCinematicCell ? (
-            <CinematicLayerVisual imageUrl={referenceImageUrl} selectedOrganelle={selectedOrganelle} onSelectOrganelle={setSelectedOrganelle} autoRotate={autoRotate || proofMode} />
+            <CinematicLayerVisual imageUrl={referenceImageUrl} selectedOrganelle={selectedOrganelle} onSelectOrganelle={handleOrganelleClick} autoRotate={autoRotate || proofMode} />
           ) : (
             <>
-              <CellFallback selectedCell={selectedCell} modelCellId={modelCellId} referenceImageUrl={referenceImageUrl} selectedOrganelle={selectedOrganelle} onSelectOrganelle={setSelectedOrganelle} />
+              <CellFallback selectedCell={selectedCell} modelCellId={modelCellId} referenceImageUrl={referenceImageUrl} selectedOrganelle={selectedOrganelle} onSelectOrganelle={handleOrganelleClick} />
               {!generationFailed && (
                 <CellScene
                   key={`${selectedCell}-${resetNonce}`}
@@ -2534,7 +2573,7 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
                   hideOthers={hideOthers}
                   proofMode={proofMode}
                   renderQuality={renderQuality}
-                  onSelectOrganelle={setSelectedOrganelle}
+                  onSelectOrganelle={handleOrganelleClick}
                   onExporterReady={onExporterReady}
                 />
               )}
@@ -2592,27 +2631,25 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
       </div>
       {capturePulse && <div className="capture-pulse" />}
       <div className="stage-toolbar">
-        <button type="button" className={autoRotate ? 'active' : ''} onClick={handleRotate} aria-pressed={autoRotate}>
-          <Move3D size={14} />
-          {t('toolbar.rotate', lang)}
-        </button>
-        <button type="button" className={isIsolated ? 'active' : ''} onClick={handleIsolate} aria-pressed={isIsolated}>
-          <Eye size={14} />
-          {t('toolbar.isolate', lang)}
-        </button>
-        <button type="button" className={hideOthers ? 'active' : ''} onClick={handleHideOthers} aria-pressed={hideOthers}>
-          <Layers3 size={14} />
-          {t('toolbar.hideOthers', lang)}
-        </button>
+        <div className="interaction-modes">
+          <button type="button" className={interactionMode === 'observe' ? 'active' : ''} onClick={() => { setInteractionMode('observe'); setHideOthers(false); setIsIsolated(false) }}>
+            <Eye size={14} />
+            {t('interact.observe', lang)}
+          </button>
+          <button type="button" className={interactionMode === 'annotate' ? 'active annotate-active' : ''} onClick={() => setInteractionMode('annotate')}>
+            <Pencil size={14} />
+            {t('interact.annotate', lang)}
+          </button>
+          <button type="button" className={interactionMode === 'focus' ? 'active focus-active' : ''} onClick={() => { setInteractionMode('focus'); if (selectedOrganelle) { setHideOthers(true); setIsIsolated(true); setViewMode('focus') } }}>
+            <CircleDot size={14} />
+            {t('interact.focus', lang)}
+          </button>
+        </div>
+        <span />
         <button type="button" onClick={handleResetView}>
           <RotateCcw size={14} />
           {t('toolbar.resetView', lang)}
         </button>
-        <button type="button" className={proofMode ? 'active proof-active' : ''} onClick={handleProofMode} aria-pressed={proofMode}>
-          <Box size={14} />
-          {t('toolbar.3dProof', lang)}
-        </button>
-        <span />
         <button type="button" onClick={handleScreenshot}>
           <Camera size={14} />
           {t('toolbar.screenshot', lang)}
@@ -2626,7 +2663,7 @@ function CenterStage({ selectedCell, selectedOrganelle, setSelectedOrganelle, cr
   )
 }
 
-function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavoriteKey, labelVisible, setLabelVisible, lang, onNotify }) {
+function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavoriteKey, labelVisible, setLabelVisible, lang, onNotify, interactionMode, notes, onUpdateNote }) {
   const detail = getOrganelleDetail(selectedCell, selectedOrganelle)
   const currentKey = `${selectedCell}:${selectedOrganelle}`
   const isFavorite = favoriteKey === currentKey
@@ -2695,6 +2732,28 @@ function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavorite
         </dl>
       </section>
 
+      {interactionMode === 'annotate' && (
+        <section className="panel annotation-panel">
+          <header className="panel-title">
+            <span>
+              <Pencil size={13} />
+              {t('annotation.title', lang)}
+            </span>
+          </header>
+          <div className="annotation-editor">
+            <textarea
+              value={notes[`${selectedCell}:${selectedOrganelle}`] ?? ''}
+              onChange={(event) => onUpdateNote(`${selectedCell}:${selectedOrganelle}`, event.target.value)}
+              placeholder={t('annotation.placeholder', lang)}
+            />
+            <div className="annotation-meta">
+              <span>{(notes[`${selectedCell}:${selectedOrganelle}`] ?? '').length} {t('annotation.chars', lang)}</span>
+              <span>{t('annotation.autosaved', lang)}</span>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="panel notes-panel">
         <header className="panel-title">
           <span>{t('detail.biologicalNotes', lang)}</span>
@@ -2738,11 +2797,10 @@ function DetailPanel({ selectedCell, selectedOrganelle, favoriteKey, setFavorite
   )
 }
 
-function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, uploadedImage, generationMode, onGenerationModeChange, compareCell, onUploadImage, onCompare, lang, onNotify }) {
+function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, uploadedImage, compareCell, onUploadImage, onCompare, lang, onNotify }) {
   const fileInputRef = useRef(null)
   const selected = getCell(selectedCell)
   const compareTarget = getCell(compareCell)
-  const uploadAccept = generationMode === 'local' ? '.glb,.gltf,model/gltf-binary,model/gltf+json' : 'image/*,.glb,.gltf,model/gltf-binary,model/gltf+json'
 
   function handleMicroscopeSelect(item) {
     setSelectedMicroscope(item.label)
@@ -2756,25 +2814,6 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
           <span>{t('bottom.microscopeView', lang)}</span>
           <small>3</small>
         </header>
-        <div className="generation-mode-row">
-          <span>{t('bottom.generateMode', lang)}</span>
-          <div className="generation-mode-pills">
-            {GENERATION_MODE_OPTIONS.map((mode) => (
-              <button
-                key={mode.id}
-                type="button"
-                className={generationMode === mode.id ? 'active' : ''}
-                onClick={() => {
-                  onGenerationModeChange(mode.id)
-                  onNotify(`${mode.label} mode selected`)
-                }}
-                title={mode.description}
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
-        </div>
         <div className="micro-grid">
           {MICROSCOPE_IMAGES.map((item) => (
             <button
@@ -2800,7 +2839,7 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
             ref={fileInputRef}
             className="hidden-file-input"
             type="file"
-            accept={uploadAccept}
+            accept="image/*,.glb,.gltf,model/gltf-binary,model/gltf+json"
             onChange={(event) => {
               const file = event.target.files?.[0]
               if (!file) return
@@ -2834,7 +2873,7 @@ function BottomDeck({ selectedCell, selectedMicroscope, setSelectedMicroscope, u
   )
 }
 
-function StudioHeader({ activePanel, setActivePanel, onNotify, lang, toggleLang }) {
+function StudioHeader({ activePanel, setActivePanel, appMode, setAppMode, onNotify, lang, toggleLang }) {
   function openPanel(panel) {
     const next = activePanel === panel ? null : panel
     setActivePanel(next)
@@ -2853,22 +2892,30 @@ function StudioHeader({ activePanel, setActivePanel, onNotify, lang, toggleLang 
         </div>
       </div>
       <nav className="studio-nav">
-        <button type="button" className={activePanel === 'Gallery' ? 'active' : ''} onClick={() => openPanel('Gallery')}>
-          <Grid3X3 size={15} />
-          {t('nav.gallery', lang)}
-        </button>
-        <button type="button" className={activePanel === 'Library' ? 'active' : ''} onClick={() => openPanel('Library')}>
-          <Library size={15} />
-          {t('nav.library', lang)}
-        </button>
-        <button type="button" className={activePanel === 'Notebooks' ? 'active' : ''} onClick={() => openPanel('Notebooks')}>
-          <BookOpen size={15} />
-          {t('nav.notebooks', lang)}
-        </button>
-        <button type="button" className={activePanel === 'Settings' ? 'active' : ''} onClick={() => openPanel('Settings')}>
-          <Settings size={15} />
-          {t('nav.settings', lang)}
-        </button>
+        <div className="mode-toggle">
+          <button type="button" className={appMode === 'library' ? 'active' : ''} onClick={() => setAppMode('library')}>
+            {lang === 'zh' ? '图书馆' : 'Library'}
+          </button>
+          <button type="button" className={appMode === 'viewer' ? 'active' : ''} onClick={() => setAppMode('viewer')}>
+            {lang === 'zh' ? '查看器' : 'Viewer'}
+          </button>
+        </div>
+        {appMode === 'viewer' && (
+          <>
+            <button type="button" className={activePanel === 'Gallery' ? 'active' : ''} onClick={() => openPanel('Gallery')}>
+              <Grid3X3 size={15} />
+              {t('nav.gallery', lang)}
+            </button>
+            <button type="button" className={activePanel === 'Notebooks' ? 'active' : ''} onClick={() => openPanel('Notebooks')}>
+              <BookOpen size={15} />
+              {t('nav.notebooks', lang)}
+            </button>
+            <button type="button" className={activePanel === 'Settings' ? 'active' : ''} onClick={() => openPanel('Settings')}>
+              <Settings size={15} />
+              {t('nav.settings', lang)}
+            </button>
+          </>
+        )}
         <button type="button" className="lang-toggle" onClick={toggleLang} title={lang === 'en' ? 'Switch to Chinese' : '切换到英文'}>
           {t('misc.language', lang)}
         </button>
@@ -3184,6 +3231,8 @@ function App() {
   const [notes, setNotes] = useState(() => loadStoredValue('bio-demo-notes', {}))
   const [settings, setSettings] = useState(() => normalizeSettings(loadStoredValue(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)))
   const [lang, setLang] = useState(() => loadStoredValue('bio-demo-lang', 'zh'))
+  const [appMode, setAppMode] = useState(() => loadStoredValue('bio-demo-app-mode', 'library'))
+  const [interactionMode, setInteractionMode] = useState('observe')
   const allCells = useMemo(() => getAllCells(customCells), [customCells])
 
   useEffect(() => {
@@ -3202,7 +3251,76 @@ function App() {
     storeValue('bio-demo-lang', lang)
   }, [lang])
 
+  useEffect(() => {
+    storeValue('bio-demo-app-mode', appMode)
+  }, [appMode])
+
   const toggleLang = () => setLang((prev) => (prev === 'en' ? 'zh' : 'en'))
+
+  function handleLibrarySelectModel(catalogItem) {
+    if (catalogItem.model?.glbUrl) {
+      const seeded = SEEDED_GENERATED_CELLS.find((s) => s.id === catalogItem.id)
+      if (seeded) {
+        setSelectedCell(seeded.id)
+        setSelectedOrganelle(getDefaultOrganelle(seeded.id))
+        setAppMode('viewer')
+        setToast(`${catalogItem.name[lang] || catalogItem.name.en} loaded`)
+        return
+      }
+    }
+
+    const templateId = catalogItem.template || 'animal'
+    const existingBuiltIn = CELL_TYPES.find((c) => c.id === templateId)
+    if (existingBuiltIn) {
+      setSelectedCell(existingBuiltIn.id)
+      setSelectedOrganelle(getDefaultOrganelle(existingBuiltIn.id))
+      setAppMode('viewer')
+      setToast(`${catalogItem.name[lang] || catalogItem.name.en} loaded`)
+    }
+  }
+
+  async function handleLibraryGenerate({ type, prompt, file }) {
+    if (type === 'text') {
+      const customCell = createCustomCell(`${prompt}.png`, '', {
+        provider: 'tripo',
+        requestedProvider: 'auto',
+        status: 'uploading',
+        message: lang === 'zh' ? '正在生成参考图...' : 'Creating reference image...',
+      })
+      const nextCustomCells = [customCell, ...customCells].slice(0, 8)
+      setCustomCells(nextCustomCells)
+      storeValue(CUSTOM_CELL_STORAGE_KEY, nextCustomCells)
+      setSelectedCell(customCell.id)
+      setSelectedOrganelle(getDefaultOrganelle(customCell.id))
+      setAppMode('viewer')
+
+      try {
+        const imageRes = await fetch(apiUrl('/api/image/generate'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, lang }),
+        })
+        const imageData = await readApiResponse(imageRes)
+        const imageUrl = imageData.imageDataUrl
+
+        updateCustomCell(customCell.id, (cell) => ({
+          imageUrl,
+          generation: { ...cell.generation, status: 'processing', message: lang === 'zh' ? '构建 3D 模型中...' : 'Building 3D model...' },
+        }))
+        setUploadedImage({ name: prompt, url: imageUrl })
+
+        await generateCustomCellModel(customCell, imageUrl, `${prompt}.png`, 'auto')
+      } catch (error) {
+        updateCustomCell(customCell.id, (cell) => ({
+          generation: { ...cell.generation, status: 'failed', message: error.message || 'Generation failed' },
+        }))
+        throw error
+      }
+    } else if (type === 'image' && file) {
+      await handleUploadImage(file)
+      setAppMode('viewer')
+    }
+  }
 
   useEffect(() => {
     storeValue('bio-demo-label-visible', labelVisible)
@@ -3577,7 +3695,11 @@ function App() {
   return (
     <main className={settings.compactUi ? 'studio-shell compact-ui' : 'studio-shell'}>
       <motion.div className="studio-window" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
-        <StudioHeader activePanel={activePanel} setActivePanel={setActivePanel} onNotify={setToast} lang={lang} toggleLang={toggleLang} />
+        <StudioHeader activePanel={activePanel} setActivePanel={setActivePanel} appMode={appMode} setAppMode={setAppMode} onNotify={setToast} lang={lang} toggleLang={toggleLang} />
+        {appMode === 'library' ? (
+          <LibraryView lang={lang} onSelectModel={handleLibrarySelectModel} onGenerate={handleLibraryGenerate} />
+        ) : (
+        <>
         <WorkspaceDrawer
           activePanel={activePanel}
           selectedCell={selectedCell}
@@ -3618,6 +3740,7 @@ function App() {
             setSelectedOrganelle={setSelectedOrganelle}
             customCells={customCells}
             lang={lang}
+            notes={notes}
           />
           <CenterStage
             selectedCell={selectedCell}
@@ -3633,6 +3756,10 @@ function App() {
             onExport={handleExport}
             onExporterReady={setSceneExporter}
             onRetryGeneration={handleRetryGeneration}
+            interactionMode={interactionMode}
+            setInteractionMode={setInteractionMode}
+            notes={notes}
+            onUpdateNote={handleUpdateNote}
           />
           <DetailPanel
             selectedCell={selectedCell}
@@ -3643,14 +3770,15 @@ function App() {
             setLabelVisible={setLabelVisible}
             lang={lang}
             onNotify={setToast}
+            interactionMode={interactionMode}
+            notes={notes}
+            onUpdateNote={handleUpdateNote}
           />
           <BottomDeck
             selectedCell={selectedCell}
             selectedMicroscope={selectedMicroscope}
             setSelectedMicroscope={setSelectedMicroscope}
             uploadedImage={uploadedImage}
-            generationMode={settings.generationMode}
-            onGenerationModeChange={(generationMode) => setSettings((current) => ({ ...current, generationMode }))}
             onUploadImage={handleUploadImage}
             compareCell={compareCell}
             onCompare={handleOpenCompare}
@@ -3658,6 +3786,8 @@ function App() {
             onNotify={setToast}
           />
         </div>
+        </>
+        )}
       </motion.div>
     </main>
   )
