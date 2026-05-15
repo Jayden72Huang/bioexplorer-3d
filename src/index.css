@@ -24,6 +24,10 @@ body,
 }
 
 body {
+  overflow: auto;
+}
+
+body:has(.studio-shell) {
   overflow: hidden;
 }
 
